@@ -1,4 +1,6 @@
-# PromptLint — Grammarly for AI Prompts
+# PromptLint — AI Prompt Linter
+
+*Think grammar-checker, but for AI prompts.*
 
 Underlines weak prompts as you type inside **ChatGPT, Claude, Gemini, and Perplexity** — vague asks, missing format, dangling references, multi-ask overload — with a live **Prompt Strength score** and a one-click **Restructure** that rebuilds your prompt from your own words.
 
@@ -85,7 +87,8 @@ Pure-logic tests (tokenizer, all 9 rules, scoring, restructure, 30 ms perf budge
 
 ## Chrome Web Store listing draft
 
-**Title:** PromptLint — Grammarly for AI Prompts
+**Title:** PromptLint — AI Prompt Linter
+*(No third-party brand names in the title or listing — using another product's trademark, e.g. "Grammarly", in store metadata is a common impersonation-policy rejection.)*
 
 **Summary (132 chars):**
 `Underlines weak AI prompts as you type in ChatGPT, Claude, Gemini & Perplexity. Live score + 1-click restructure. 100% local.`
@@ -94,7 +97,7 @@ Pure-logic tests (tokenizer, all 9 rules, scoring, restructure, 30 ms perf budge
 
 > Ever asked ChatGPT to "improve this" and gotten mush back? The problem usually isn't the model — it's the prompt.
 >
-> PromptLint is Grammarly for AI prompts. As you type in ChatGPT, Claude, Gemini, or Perplexity, it underlines the weak spots in your draft before you hit Enter:
+> PromptLint is a real-time linter for your AI prompts. As you type in ChatGPT, Claude, Gemini, or Perplexity, it underlines the weak spots in your draft before you hit Enter:
 >
 > • Vague asks with no object or goal
 > • Missing output format ("in what shape? how long?")

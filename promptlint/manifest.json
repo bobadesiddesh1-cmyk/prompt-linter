@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PromptLint — Grammarly for AI Prompts",
+  "name": "PromptLint — AI Prompt Linter",
   "version": "1.0.0",
+  "minimum_chrome_version": "105",
   "description": "Underlines weak AI prompts as you type in ChatGPT, Claude, Gemini & Perplexity. Live score + 1-click restructure. 100% local.",
   "permissions": ["storage"],
   "icons": {
