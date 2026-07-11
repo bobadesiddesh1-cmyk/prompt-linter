@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PromptLint</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="mark">P̲</span>
+      <div>
+        <h1>PromptLint</h1>
+        <p class="tag">Lint your AI prompts · 100% local</p>
+      </div>
+    </div>
+    <label class="switch" title="Global kill switch">
+      <input type="checkbox" id="global-toggle">
+      <span class="slider"></span>
+    </label>
+  </header>
+
+  <section>
+    <h2>Sites</h2>
+    <div id="site-toggles" class="toggle-list"></div>
+  </section>
+
+  <section>
+    <h2>Rule categories</h2>
+    <div id="category-toggles" class="toggle-list"></div>
+  </section>
+
+  <section>
+    <h2>Recent prompt scores</h2>
+    <ul id="history" class="history"></ul>
+    <p id="history-empty" class="empty">No prompts scored yet — start typing in ChatGPT, Claude, Gemini or Perplexity.</p>
+  </section>
+
+  <footer>Zero network calls · no analytics · no account · settings sync with your browser profile</footer>
+
+  <script src="../shared/storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
