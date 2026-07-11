@@ -142,6 +142,35 @@
     });
   }
 
+  /** One-shot boolean flags in chrome.storage.local (e.g. onboarding shown). */
+  function getLocalFlag(key) {
+    return new Promise((resolve) => {
+      if (!hasChrome() || !chrome.storage.local) return resolve(false);
+      try {
+        chrome.storage.local.get(key, (res) => {
+          if (chrome.runtime.lastError) return resolve(false);
+          resolve(!!(res && res[key]));
+        });
+      } catch (e) {
+        resolve(false);
+      }
+    });
+  }
+
+  function setLocalFlag(key, value) {
+    return new Promise((resolve) => {
+      if (!hasChrome() || !chrome.storage.local) return resolve();
+      try {
+        chrome.storage.local.set({ [key]: !!value }, () => {
+          void chrome.runtime.lastError;
+          resolve();
+        });
+      } catch (e) {
+        resolve();
+      }
+    });
+  }
+
   PL.storageApi = {
     SITES,
     DEFAULT_SETTINGS,
@@ -150,5 +179,7 @@
     onSettingsChanged,
     pushHistory,
     getHistory,
+    getLocalFlag,
+    setLocalFlag,
   };
 })();

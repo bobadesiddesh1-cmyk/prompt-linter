@@ -33,3 +33,9 @@ Decisions made where the spec was silent or ambiguous. Everything else follows t
 18. **Restructure slot filling**: clauses are classified in priority order — format-signal clauses → Output format; role/context-marker clauses → Role/Context; imperative-start clauses → Task (numbered when > 1); everything else → Details. Filler phrases are stripped from all slots. Empty slots get `[ADD: …]` placeholders.
 19. **Score is recomputed only from enabled categories** — toggling a category off removes its issues from underlines, panel, and score alike.
 20. **Icons** are generated pixel-art PNGs (purple rounded square, white "prompt lines", red dotted underline motif) checked in as binaries; the generator script is not shipped in the extension folder.
+
+## v1.0.1 — badge visibility & placeholder fix
+
+21. **Badge redesign for discoverability**: the score-only colored pill blended into host-site buttons and read as part of the page. The badge is now a branded pill — purple "P" logo mark + grade-colored score (+ issue count) on a host-neutral light/dark background — showing the "PromptLint" wordmark when the composer is empty. It plays a soft two-beat glow pulse on mount (per page load, CSS-only) to catch the eye without nagging.
+22. **One-time onboarding callout**: on the first run ever (flag in `chrome.storage.local`), a small bubble above the badge explains what PromptLint does and that the score is clickable. Dismissed by "Got it", clicking the badge, or a 15 s timeout — never shown again after acknowledgment.
+23. **Placeholder text treated as empty**: Perplexity's Lexical editor renders its "Ask anything" placeholder as real text nodes, which linted as a prompt and lit the badge green 100 on an empty box. Text identical to the composer's `placeholder`/`data-placeholder`/`aria-placeholder` (on the element or its first child) now counts as empty for linting, badge state, and history capture.

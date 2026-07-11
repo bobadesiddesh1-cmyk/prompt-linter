@@ -92,6 +92,27 @@
     }, DETECT_DEBOUNCE_MS);
   }
 
+  /**
+   * Some composers (e.g. Perplexity's Lexical editor) render their
+   * placeholder as real text nodes, which would otherwise lint as a prompt
+   * and light the badge green on an empty box. Treat text identical to the
+   * composer's declared placeholder as empty.
+   */
+  function isPlaceholderText(el, trimmedText) {
+    try {
+      const sources = [el, el.firstElementChild].filter(Boolean);
+      for (const node of sources) {
+        for (const attr of ['placeholder', 'data-placeholder', 'aria-placeholder']) {
+          const ph = (node.getAttribute && node.getAttribute(attr) || '').trim();
+          if (ph && ph === trimmedText) return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function findStillValid(c) {
     try {
       const r = c.el.getBoundingClientRect();
@@ -161,7 +182,7 @@
       state.onInput = () => {
         try {
           const t = state.hl ? state.hl.getText() : '';
-          if (t.trim()) state.pendingText = t;
+          if (t.trim() && !isPlaceholderText(composerInfo.el, t.trim())) state.pendingText = t;
         } catch (e) { /* no-op */ }
         clearTimeout(state.lintTimer);
         state.lintTimer = setTimeout(lint, DEBOUNCE_MS);
@@ -186,6 +207,13 @@
       composerInfo.el.addEventListener('mouseleave', state.onMouseLeave, { passive: true });
 
       lint(); // initial pass
+
+      // First-ever run on this browser: show the "what is this" callout once.
+      PL.storageApi.getLocalFlag('promptlint_onboarded').then((seen) => {
+        if (!seen && state.badge) {
+          state.badge.showCallout(() => PL.storageApi.setLocalFlag('promptlint_onboarded', true));
+        }
+      });
     } catch (e) {
       console.debug('PromptLint: attach failed', e);
       detachComposer();
@@ -231,7 +259,9 @@
     try {
       const text = state.hl.getText();
       const analysis = PL.tokenizer.analyze(text);
-      const hasText = analysis.trimmed.text.length > 0;
+      const hasText =
+        analysis.trimmed.text.length > 0 &&
+        !isPlaceholderText(state.composer.el, analysis.trimmed.text);
 
       // History: non-empty → empty transition ≈ "prompt was sent" (DECISIONS #10).
       // Score the text captured by the input handler — the true final draft,
