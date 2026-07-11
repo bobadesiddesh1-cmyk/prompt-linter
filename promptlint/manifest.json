@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "PromptLint — Grammarly for AI Prompts",
+  "version": "1.0.0",
+  "description": "Underlines weak AI prompts as you type in ChatGPT, Claude, Gemini & Perplexity. Live score + 1-click restructure. 100% local.",
+  "permissions": ["storage"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "PromptLint",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://*.chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://*.claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://perplexity.ai/*",
+        "https://*.perplexity.ai/*"
+      ],
+      "js": [
+        "shared/tokenizer.js",
+        "shared/storage.js",
+        "shared/ui-kit.js",
+        "content/rules.js",
+        "content/restructure.js",
+        "content/highlighter.js",
+        "content/badge.js",
+        "content/panel.js",
+        "content/adapters/chatgpt.js",
+        "content/adapters/claude.js",
+        "content/adapters/gemini.js",
+        "content/adapters/perplexity.js",
+        "content/adapters/generic.js",
+        "content/main.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
