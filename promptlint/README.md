@@ -1,6 +1,6 @@
 # PromptLint — AI Prompt Linter
 
-*Think grammar-checker, but for AI prompts.*
+*✦ Sharper prompts, better answers.*
 
 Underlines weak prompts as you type inside **ChatGPT, Claude, Gemini, and Perplexity** — vague asks, missing format, dangling references, multi-ask overload — with a live **Prompt Strength score** and a one-click **Restructure** that rebuilds your prompt from your own words.
 
