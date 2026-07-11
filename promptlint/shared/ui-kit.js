@@ -9,15 +9,17 @@
   const PL = (window.PromptLint = window.PromptLint || {});
   if (PL.ui) return;
 
+  // "Aurora" brand palette — indigo → violet → fuchsia gradient identity.
   const COLORS = {
     high: '#EF4444',
     med: '#F97316',
     low: '#EAB308',
-    strong: '#22C55E',
+    strong: '#10B981',
     ok: '#F59E0B',
-    weak: '#EF4444',
+    weak: '#F43F5E',
     neutral: '#9CA3AF',
-    accent: '#7C3AED',
+    accent: '#8B5CF6',
+    gradient: 'linear-gradient(135deg, #6366F1, #8B5CF6 55%, #D946EF)',
   };
 
   const Z_BADGE = 2147483644;
@@ -87,6 +89,7 @@
       --pl-border: #e4e4e7;
       --pl-shadow: 0 8px 30px rgba(0,0,0,.18);
       --pl-accent: ${COLORS.accent};
+      --pl-grad: ${COLORS.gradient};
     }
     @media (prefers-color-scheme: dark) {
       .pl-root {

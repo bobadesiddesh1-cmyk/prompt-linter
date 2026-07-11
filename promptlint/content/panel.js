@@ -66,7 +66,7 @@
         .cat input { accent-color: var(--pl-accent); margin: 0; cursor: pointer; }
         .restructure-btn {
           width: 100%; margin-top: 12px; padding: 9px 0; border: none; border-radius: 9px;
-          background: var(--pl-accent); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+          background: var(--pl-grad); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
         }
         .restructure-btn:hover { filter: brightness(1.1); }
         .rewrite { margin-top: 10px; display: none; }
@@ -128,8 +128,8 @@
       body.appendChild(this.rewriteBox);
       p.appendChild(body);
 
-      // Footer — privacy statement per spec.
-      p.appendChild(UI.el('div', { class: 'ftr', text: '100% local · zero network calls · no account · PromptLint' }));
+      // Footer — tagline + privacy statement per spec.
+      p.appendChild(UI.el('div', { class: 'ftr', text: '✦ Sharper prompts, better answers · 100% local · zero network calls' }));
     }
 
     _doRestructure() {

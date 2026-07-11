@@ -1,15 +1,15 @@
-# Chrome Web Store submission guide — PromptLint v1.0.1
+# Chrome Web Store submission guide — PromptLint v1.0.2
 
 Everything below is paste-ready for the [Developer Dashboard](https://chrome.google.com/webstore/devconsole). Fields appear in dashboard order.
 
 ## 0. The package
 
-Upload **`promptlint-v1.0.1-store.zip`** (built from `promptlint/` with `manifest.json` at the **root of the zip** — the Web Store rejects zips where the manifest is nested inside a folder).
+Upload **`promptlint-v1.0.2-store.zip`** (built from `promptlint/` with `manifest.json` at the **root of the zip** — the Web Store rejects zips where the manifest is nested inside a folder).
 
 Rebuild it any time with:
 
 ```bash
-cd promptlint && zip -r ../promptlint-v1.0.1-store.zip . -x "README.md" -x "DECISIONS.md"
+cd promptlint && zip -r ../promptlint-v1.0.2-store.zip . -x "README.md" -x "DECISIONS.md"
 ```
 
 ## 1. Store listing
@@ -70,7 +70,7 @@ Better prompts in, better answers out.
 - Regions: all.
 - Pricing: free.
 
-## 5. Pre-flight checklist (verified for v1.0.1)
+## 5. Pre-flight checklist (verified for v1.0.2)
 
 - [x] `manifest.json` at zip root; loads unpacked with zero console errors.
 - [x] Manifest V3; `minimum_chrome_version: 105` (CSS Custom Highlight API).

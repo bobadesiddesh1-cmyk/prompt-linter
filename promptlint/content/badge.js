@@ -57,7 +57,7 @@
         .badge[data-state="empty"] { padding: 0 8px 0 5px; }
         .logo {
           width: 17px; height: 17px; border-radius: 5px; flex: none;
-          background: ${UI.COLORS.accent}; color: #fff;
+          background: ${UI.COLORS.gradient}; color: #fff;
           font: 800 11px/17px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           text-align: center; display: inline-block;
         }
@@ -65,9 +65,9 @@
         .score { font-weight: 800; font-size: 13px; }
         .count { font-weight: 600; font-size: 10.5px; color: var(--pl-fg2); }
         @keyframes pl-pulse {
-          0%   { box-shadow: 0 2px 10px rgba(0,0,0,.18), 0 0 0 0 rgba(124,58,237,.45); }
-          70%  { box-shadow: 0 2px 10px rgba(0,0,0,.18), 0 0 0 9px rgba(124,58,237,0); }
-          100% { box-shadow: 0 2px 10px rgba(0,0,0,.18), 0 0 0 0 rgba(124,58,237,0); }
+          0%   { box-shadow: 0 2px 10px rgba(0,0,0,.18), 0 0 0 0 rgba(139,92,246,.5); }
+          70%  { box-shadow: 0 2px 10px rgba(0,0,0,.18), 0 0 0 9px rgba(139,92,246,0); }
+          100% { box-shadow: 0 2px 10px rgba(0,0,0,.18), 0 0 0 0 rgba(139,92,246,0); }
         }
         .badge.pulse { animation: pl-pulse 1.5s ease-out 2; }
         .callout {
@@ -88,7 +88,7 @@
         .callout .gotit {
           display: block; margin-top: 8px; padding: 5px 12px;
           border: none; border-radius: 7px; cursor: pointer;
-          background: var(--pl-accent); color: #fff; font-weight: 700; font-size: 12px;
+          background: var(--pl-grad); color: #fff; font-weight: 700; font-size: 12px;
         }
       `;
       shadow.appendChild(style);
@@ -175,7 +175,7 @@
       try {
         this.btn.textContent = '';
         this.btn.dataset.state = hasText ? 'scored' : 'empty';
-        this.btn.appendChild(UI.el('span', { class: 'logo', text: 'P' }));
+        this.btn.appendChild(UI.el('span', { class: 'logo', text: '✦' }));
         if (hasText) {
           this.btn.appendChild(
             UI.el('span', { class: 'score', text: String(score), style: 'color:' + UI.gradeColor(score, true) })
