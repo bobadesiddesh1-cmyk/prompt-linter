@@ -40,6 +40,7 @@
     pendingText: null, // latest non-empty composer text, for history on clear
     active: false,
     observer: null,
+    commandPort: null,
     urlPoll: 0,
     onInput: null,
     onMouseMove: null,
@@ -157,6 +158,14 @@
         onIssueClick: (issue) => {
           try { state.hl && state.hl.pulse(issue); } catch (e) { /* no-op */ }
         },
+        onQuickFix: (issue) => applyQuickFix(issue),
+        onSaveSnippet: async () => {
+          const text = state.hl ? state.hl.getText().trim() : '';
+          if (!text || isPlaceholderText(state.composer.el, text)) return false;
+          return !!(await PL.library.saveSnippet(text));
+        },
+        onUseText: (text) => insertIntoComposer(text),
+        onDeleteSnippet: (id) => PL.library.deleteSnippet(id),
         onToggleCategory: async (key, on) => {
           state.settings = await PL.storageApi.updateSettings({ categories: { [key]: on } });
           lint();
@@ -167,8 +176,9 @@
           const cats = state.settings.categories;
           const rewritten = PL.restructure(analysis).text;
           // Score both versions so the panel can show the payoff (50 → 100).
-          const before = PL.rules.score(PL.rules.run(analysis, cats)).score;
-          const after = PL.rules.score(PL.rules.run(PL.tokenizer.analyze(rewritten), cats)).score;
+          const custom = state.settings.customRules;
+          const before = PL.rules.score(PL.rules.run(analysis, cats, custom)).score;
+          const after = PL.rules.score(PL.rules.run(PL.tokenizer.analyze(rewritten), cats, custom)).score;
           return { text: rewritten, before, after };
         },
         onInsert: (text) => insertIntoComposer(text),
@@ -283,8 +293,10 @@
       if (!hasText && state.pendingText) {
         const finalAnalysis = PL.tokenizer.analyze(state.pendingText);
         if (finalAnalysis.wordCount >= 2) {
-          const finalIssues = PL.rules.run(finalAnalysis, state.settings.categories);
+          const finalIssues = PL.rules.run(finalAnalysis, state.settings.categories, state.settings.customRules);
           const finalScore = PL.rules.score(finalIssues);
+          // Usage stats (local only) — totals, average, best, day streak.
+          try { PL.stats.record(finalScore.score, Date.now()); } catch (e) { /* no-op */ }
           PL.storageApi.pushHistory({
             score: finalScore.score,
             grade: finalScore.grade,
@@ -296,7 +308,7 @@
         state.pendingText = null;
       }
 
-      const issues = hasText ? PL.rules.run(analysis, state.settings.categories) : [];
+      const issues = hasText ? PL.rules.run(analysis, state.settings.categories, state.settings.customRules) : [];
       const { score, grade } = PL.rules.score(issues);
 
       state.lastAnalysis = analysis;
@@ -308,7 +320,11 @@
       else state.hl.clear();
       if (state.badge) state.badge.update(score, issues.length, hasText);
       if (state.panel) {
-        state.panel.setData({ score, grade, issues, hasText, categories: state.settings.categories });
+        state.panel.setData({
+          score, grade, issues, hasText,
+          categories: state.settings.categories,
+          quickFixFor: (issue) => PL.quickfix.getQuickFix(issue, analysis),
+        });
       }
     } catch (e) {
       console.debug('PromptLint: lint pass failed', e);
@@ -353,6 +369,71 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Quick fixes                                                         */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Apply a one-click fix to the composer. Multi-ask routes to the
+   * restructure engine (which numbers the asks); everything else is a pure
+   * string transform re-inserted through the undo-preserving path.
+   */
+  function applyQuickFix(issue) {
+    try {
+      if (!state.hl) return;
+      const text = state.hl.getText();
+      const analysis = PL.tokenizer.analyze(text);
+      const qf = PL.quickfix.getQuickFix(issue, analysis);
+      if (!qf) return;
+      if (qf.restructure) {
+        state.panel && state.panel.doRestructure();
+        return;
+      }
+      const next = qf.apply(text);
+      if (next && next !== text) insertIntoComposer(next);
+    } catch (e) {
+      console.debug('PromptLint: quick fix failed', e);
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Keyboard shortcuts (via the background service worker)              */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * The content script connects OUT to the worker (no host permission
+   * needed, unlike tabs.sendMessage). The worker broadcasts each command to
+   * every tab, so we act only when this document actually has focus.
+   * No keydown/keypress/keyup listener is involved anywhere.
+   */
+  function connectCommands() {
+    try {
+      if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.connect) return;
+      const port = chrome.runtime.connect({ name: 'promptlint' });
+      port.onMessage.addListener((msg) => {
+        try {
+          if (!msg || !document.hasFocus() || !state.composer || !siteEnabled()) return;
+          if (msg.command === 'toggle-panel') state.panel && state.panel.toggle('issues');
+          else if (msg.command === 'open-library') state.panel && state.panel.show('library');
+          else if (msg.command === 'restructure-prompt') {
+            if (!state.panel) return;
+            state.panel.show('issues');
+            state.panel.doRestructure();
+          }
+        } catch (e) {
+          console.debug('PromptLint: command handling failed', e);
+        }
+      });
+      port.onDisconnect.addListener(() => {
+        void (chrome.runtime && chrome.runtime.lastError);
+        state.commandPort = null;
+      });
+      state.commandPort = port;
+    } catch (e) {
+      console.debug('PromptLint: command port failed', e);
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Enable / disable lifecycle                                          */
   /* ------------------------------------------------------------------ */
 
@@ -379,6 +460,7 @@
         state.settings = next;
         applyEnabledState();
       });
+      connectCommands();
       startWatching();
       state.active = siteEnabled();
       if (!state.active) return; // watchers stay armed; storage change can activate later

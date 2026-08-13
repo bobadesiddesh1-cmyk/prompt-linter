@@ -1,15 +1,15 @@
-# Chrome Web Store submission guide — PromptLint v1.1.0
+# Chrome Web Store submission guide — PromptLint v1.2.0
 
 Everything below is paste-ready for the [Developer Dashboard](https://chrome.google.com/webstore/devconsole). Fields appear in dashboard order.
 
 ## 0. The package
 
-Upload **`promptlint-v1.1.0-store.zip`** (built from `promptlint/` with `manifest.json` at the **root of the zip** — the Web Store rejects zips where the manifest is nested inside a folder).
+Upload **`promptlint-v1.2.0-store.zip`** (built from `promptlint/` with `manifest.json` at the **root of the zip** — the Web Store rejects zips where the manifest is nested inside a folder).
 
 Rebuild it any time with:
 
 ```bash
-cd promptlint && zip -r ../promptlint-v1.1.0-store.zip . -x "README.md" -x "DECISIONS.md"
+cd promptlint && zip -r ../promptlint-v1.2.0-store.zip . -x "README.md" -x "DECISIONS.md"
 ```
 
 ## 1. Store listing
@@ -37,6 +37,13 @@ PromptLint is a real-time linter for your AI prompts. As you type in ChatGPT, Cl
 A live Prompt Strength score (0–100) sits at the corner of the composer. Click it for the full issue list with fix suggestions — or hit "Restructure prompt" to reorganize your own words into a clean Role/Context → Task → Details → Output format skeleton, with [ADD: …] markers showing exactly what's missing. Insert it back with one click; Ctrl+Z restores your original. It never sends anything for you.
 
 Private by construction: 100% local rule engine. Zero network calls, zero analytics, no account, and the only permission is "storage" for your own settings. Your prompts never leave the page.
+
+Also included:
+• Prompt library — 20 built-in starter templates plus your own saved prompts, inserted in one click
+• One-click quick fixes for the issues that have a mechanical fix
+• Keyboard shortcuts (Alt+Shift+P panel, Alt+Shift+R restructure, Alt+Shift+L library)
+• Your own custom rules — banned words and required phrases
+• Local usage stats: average score, best, and a day streak
 
 Better prompts in, better answers out.
 
@@ -74,11 +81,12 @@ Built with Siddesh — buildwithsiddesh.com
 - Regions: all.
 - Pricing: free.
 
-## 5. Pre-flight checklist (verified for v1.1.0)
+## 5. Pre-flight checklist (verified for v1.2.0)
 
 - [x] `manifest.json` at zip root; loads unpacked with zero console errors.
 - [x] Manifest V3; `minimum_chrome_version: 105` (CSS Custom Highlight API).
-- [x] Only permission requested: `storage`. No `activeTab`, no `<all_urls>`, no unused permissions.
+- [x] Only permission requested: `storage`. No `activeTab`, no `<all_urls>`, no unused permissions. (`commands` and `background` add no permission warning.)
+- [x] Service worker only relays keyboard commands — no page access, no network.
 - [x] Content scripts limited to exactly the four sites the listing names.
 - [x] Zero network calls / analytics anywhere in the code (grep-verified: no fetch, XHR, WebSocket, or external URLs).
 - [x] No remote code, no eval, no CDN.

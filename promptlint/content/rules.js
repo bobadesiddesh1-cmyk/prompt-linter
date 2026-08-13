@@ -389,16 +389,78 @@
     format: 'Format',
     structure: 'Structure',
     style: 'Style',
+    custom: 'Custom',
   };
 
   const DEDUCTION = { high: 20, med: 10, low: 4 };
 
   /**
+   * User-defined rules (category 'custom'), configured in the popup:
+   *   banned:   words/phrases that must NOT appear (Med, underlines the hit)
+   *   required: words/phrases that MUST appear (Low, underlines the whole prompt)
+   * Both are matched case-insensitively, whole-word, exactly like the
+   * built-in lexicons. Malformed entries are skipped, never thrown.
+   */
+  function runCustom(analysis, customRules) {
+    const issues = [];
+    if (!customRules) return issues;
+    const banned = (customRules.banned || []).filter((w) => w && String(w).trim());
+    const required = (customRules.required || []).filter((w) => w && String(w).trim());
+
+    if (banned.length) {
+      try {
+        const re = T.phraseRegex(banned.map((w) => String(w).trim()));
+        let m;
+        while ((m = re.exec(analysis.lower)) !== null) {
+          issues.push({
+            id: 'custom-banned',
+            ruleName: 'Banned word',
+            category: 'custom',
+            severity: 'med',
+            start: m.index,
+            end: m.index + m[0].length,
+            message: `"${analysis.text.slice(m.index, m.index + m[0].length)}" is on your banned list.`,
+            fix: 'Remove or replace this term to match your house style.',
+          });
+          if (re.lastIndex === m.index) re.lastIndex++; // zero-width safety
+        }
+      } catch (e) {
+        console.debug('PromptLint: custom banned rules failed', e);
+      }
+    }
+
+    if (required.length) {
+      try {
+        const missing = required.filter((phrase) => {
+          const re = T.phraseRegex([String(phrase).trim()], 'i');
+          return !re.test(analysis.lower);
+        });
+        if (missing.length) {
+          issues.push({
+            id: 'custom-required',
+            ruleName: 'Required phrase missing',
+            category: 'custom',
+            severity: 'low',
+            start: analysis.trimmed.start,
+            end: analysis.trimmed.end,
+            message: `Your required list expects: ${missing.join(', ')}.`,
+            fix: `Add ${missing.length === 1 ? 'this' : 'these'} to the prompt, or edit the list in the popup.`,
+          });
+        }
+      } catch (e) {
+        console.debug('PromptLint: custom required rules failed', e);
+      }
+    }
+    return issues;
+  }
+
+  /**
    * Run all rules whose category is enabled.
    * @param {object} analysis  from PromptLint.tokenizer.analyze
    * @param {object} enabledCategories  e.g. {clarity:true, ...}
+   * @param {object} customRules  optional {banned:[], required:[]}
    */
-  function run(analysis, enabledCategories) {
+  function run(analysis, enabledCategories, customRules) {
     const issues = [];
     if (!analysis.trimmed.text) return issues;
     for (const rule of RULES) {
@@ -419,6 +481,9 @@
       } catch (e) {
         console.debug('PromptLint: rule failed', rule.id, e);
       }
+    }
+    if (!enabledCategories || enabledCategories.custom !== false) {
+      issues.push(...runCustom(analysis, customRules));
     }
     // Highest severity first, then by position — the order the panel shows.
     const sevRank = { high: 0, med: 1, low: 2 };

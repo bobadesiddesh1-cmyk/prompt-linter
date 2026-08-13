@@ -19,7 +19,101 @@
     format: 'Format (output shape, success criteria)',
     structure: 'Structure (multi-ask, contradictions)',
     style: 'Style (token-waste filler)',
+    custom: 'Custom (your own rules, below)',
   };
+
+  const LIB = window.PromptLint.library;
+  const STATS = window.PromptLint.stats;
+
+  /** "a, b , c" → ['a','b','c'] (empties dropped, duplicates kept simple). */
+  function parseList(value) {
+    return String(value || '').split(',').map((x) => x.trim()).filter(Boolean);
+  }
+
+  let saveTimer = 0;
+  function debouncedSaveCustom() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      await S.updateSettings({
+        customRules: {
+          banned: parseList($('banned').value),
+          required: parseList($('required').value),
+        },
+      });
+      const note = $('custom-saved');
+      note.textContent = 'Saved ✓';
+      setTimeout(() => (note.textContent = ''), 1400);
+    }, 500);
+  }
+
+  function statTile(value, label) {
+    const d = document.createElement('div');
+    d.className = 'stat';
+    const v = document.createElement('div');
+    v.className = 'v';
+    v.textContent = value;
+    const k = document.createElement('div');
+    k.className = 'k';
+    k.textContent = label;
+    d.append(v, k);
+    return d;
+  }
+
+  async function renderStats() {
+    const raw = await STATS.get();
+    const s = STATS.summarize(raw);
+    const box = $('stats');
+    box.textContent = '';
+    box.append(
+      statTile(s.total, 'Prompts'),
+      statTile(s.total ? s.avg : '–', 'Avg score'),
+      statTile(s.total ? s.best : '–', 'Best'),
+      statTile(s.streak ? s.streak + 'd' : '–', 'Streak')
+    );
+    const trend = document.createElement('p');
+    trend.className = 'trend';
+    if (s.delta === null || s.recentAvg === null) {
+      trend.textContent = s.total
+        ? 'Keep going — a week of prompts unlocks your trend.'
+        : 'Lint a few prompts to start tracking.';
+    } else {
+      const up = s.delta >= 0;
+      trend.innerHTML = '';
+      trend.append(document.createTextNode('This week '));
+      const b = document.createElement('b');
+      b.className = up ? 'up' : 'down';
+      b.textContent = (up ? '▲ +' : '▼ ') + s.delta;
+      trend.append(b, document.createTextNode(` vs last week (${s.recentAvg} vs ${s.priorAvg})`));
+    }
+    box.after(trend);
+  }
+
+  async function renderSnippets() {
+    const list = await LIB.getSnippets();
+    const ul = $('snippets');
+    const empty = $('snippets-empty');
+    ul.textContent = '';
+    empty.style.display = list.length ? 'none' : 'block';
+    for (const sn of list) {
+      const li = document.createElement('li');
+      const main = document.createElement('div');
+      main.className = 'hist-main';
+      const t = document.createElement('div');
+      t.className = 'hist-snippet';
+      t.textContent = sn.title;
+      const meta = document.createElement('div');
+      meta.className = 'hist-meta';
+      meta.textContent = timeAgo(sn.ts);
+      main.append(t, meta);
+      const del = document.createElement('button');
+      del.className = 'del-btn';
+      del.textContent = '🗑';
+      del.title = 'Delete';
+      del.addEventListener('click', async () => { await LIB.deleteSnippet(sn.id); renderSnippets(); });
+      li.append(main, del);
+      ul.appendChild(li);
+    }
+  }
 
   const $ = (id) => document.getElementById(id);
 
@@ -100,6 +194,15 @@
         )
       );
     }
+
+    // Custom rules
+    $('banned').value = (settings.customRules.banned || []).join(', ');
+    $('required').value = (settings.customRules.required || []).join(', ');
+    $('banned').oninput = debouncedSaveCustom;
+    $('required').oninput = debouncedSaveCustom;
+
+    await renderStats();
+    await renderSnippets();
 
     // History
     const list = $('history');

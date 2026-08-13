@@ -30,6 +30,8 @@
     // Per-site badge offset from the composer's bottom-right corner,
     // written whenever the user drags the badge. {siteId: {dx, dy}}
     badgePos: {},
+    // User-defined rules (category 'custom'), edited in the popup.
+    customRules: { banned: [], required: [] },
   };
 
   const BRAND = {
@@ -58,6 +60,10 @@
       sites: Object.assign({}, DEFAULT_SETTINGS.sites, s.sites || {}),
       categories: Object.assign({}, DEFAULT_SETTINGS.categories, s.categories || {}),
       badgePos: Object.assign({}, s.badgePos || {}),
+      customRules: {
+        banned: Array.isArray(s.customRules && s.customRules.banned) ? s.customRules.banned : [],
+        required: Array.isArray(s.customRules && s.customRules.required) ? s.customRules.required : [],
+      },
     };
   }
 
@@ -83,6 +89,7 @@
       sites: Object.assign({}, cur.sites, patch.sites || {}),
       categories: Object.assign({}, cur.categories, patch.categories || {}),
       badgePos: Object.assign({}, cur.badgePos, patch.badgePos || {}),
+      customRules: Object.assign({}, cur.customRules, patch.customRules || {}),
     };
     return new Promise((resolve) => {
       if (!hasChrome()) return resolve(next);

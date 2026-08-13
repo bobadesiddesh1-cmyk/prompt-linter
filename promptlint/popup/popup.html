@@ -31,6 +31,30 @@
   </section>
 
   <section>
+    <h2>Your stats</h2>
+    <div id="stats" class="stats"></div>
+  </section>
+
+  <section>
+    <h2>Custom rules</h2>
+    <label class="field">
+      <span>Banned words <em>(comma separated)</em></span>
+      <input type="text" id="banned" placeholder="e.g. leverage, synergy, utilise">
+    </label>
+    <label class="field">
+      <span>Required phrases <em>(comma separated)</em></span>
+      <input type="text" id="required" placeholder="e.g. output format, audience">
+    </label>
+    <p class="field-note" id="custom-saved"></p>
+  </section>
+
+  <section>
+    <h2>Saved prompts</h2>
+    <ul id="snippets" class="history"></ul>
+    <p id="snippets-empty" class="empty">No saved prompts yet — save one from the panel's Library tab.</p>
+  </section>
+
+  <section>
     <h2>Recent prompt scores</h2>
     <ul id="history" class="history"></ul>
     <p id="history-empty" class="empty">No prompts scored yet — start typing in ChatGPT, Claude, Gemini or Perplexity.</p>
@@ -48,6 +72,8 @@
   <footer>Zero network calls · no analytics · no account · settings sync with your browser profile</footer>
 
   <script src="../shared/storage.js"></script>
+  <script src="../shared/library.js"></script>
+  <script src="../shared/stats.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

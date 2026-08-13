@@ -77,6 +77,30 @@ h2 {
 .switch input:checked + .slider::before { transform: translateX(16px); }
 .switch input:disabled + .slider { opacity: .4; cursor: not-allowed; }
 
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stat {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 7px 4px; text-align: center;
+}
+.stat .v { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat .k { font-size: 9.5px; color: var(--fg2); text-transform: uppercase; letter-spacing: .03em; margin-top: 1px; }
+.trend { margin-top: 7px; font-size: 11.5px; color: var(--fg2); text-align: center; }
+.trend b { font-weight: 700; }
+.trend .up { color: var(--green); }
+.trend .down { color: var(--red); }
+
+/* Custom rules */
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.field span { font-size: 11.5px; color: var(--fg); }
+.field em { font-style: normal; color: var(--fg2); }
+.field input {
+  padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg2); color: var(--fg); font-size: 12px; font-family: inherit;
+}
+.field input:focus { outline: none; border-color: var(--accent); }
+.field-note { font-size: 11px; color: var(--green); min-height: 14px; }
+
 /* History */
 .history { list-style: none; }
 .history li {
@@ -92,6 +116,11 @@ h2 {
 .hist-snippet { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-meta { color: var(--fg2); font-size: 11px; }
 .empty { color: var(--fg2); font-size: 12px; padding: 4px 0 8px; }
+.del-btn {
+  border: none; background: none; color: var(--fg2); cursor: pointer;
+  font-size: 13px; padding: 2px 4px; flex: none;
+}
+.del-btn:hover { color: var(--red); }
 
 /* Maker attribution card */
 .brand-card {
