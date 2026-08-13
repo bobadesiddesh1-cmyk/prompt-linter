@@ -1,16 +1,20 @@
 /**
  * PromptLint — content/badge.js
  *
- * Floating score badge pinned to the composer's bottom-right corner.
- * Shadow DOM, fixed positioning, repositions on composer resize
- * (ResizeObserver), window scroll and window resize (rAF-throttled).
- * Click → toggles the panel (callback wired by main.js).
+ * Floating score badge. Branded pill (sparkle mark + grade-coloured score)
+ * anchored to the composer's bottom-right corner by default.
  *
- * Look & feel: a branded pill — purple "P" logo mark + score — on a
- * host-neutral (light/dark) background, so it reads as a deliberate tool
- * rather than blending into the site's own buttons. On mount it plays a
- * soft two-beat glow pulse to catch the eye once, and main.js can show a
- * one-time onboarding callout explaining what the badge is.
+ * v1.1.0 — the badge is now DRAGGABLE. Users complained it covered the
+ * composer's own controls, so:
+ *   · pointer-drag moves it anywhere on screen; the offset from the
+ *     composer corner is persisted per site (so it survives resizes,
+ *     SPA navigation and reloads)
+ *   · a <5px pointer movement still counts as a click (opens the panel)
+ *   · it auto-dims to 40% while you're actively typing and returns to full
+ *     opacity on hover, so it never fights the text underneath
+ *   · "Reset position" in the panel puts it back in the corner
+ *
+ * Never attaches a keydown/keypress/keyup listener — Enter/send is untouched.
  */
 (() => {
   'use strict';
@@ -18,17 +22,27 @@
   if (PL.Badge) return;
   const UI = PL.ui;
 
+  const DRAG_THRESHOLD = 5; // px before a press becomes a drag, not a click
+  const DIM_AFTER_MS = 1200;
+
   class Badge {
     /**
      * @param {Element} composerEl
      * @param {Function} onClick
-     * @param {Function} onReposition  called with the badge's rect after every move
+     * @param {Function} onReposition  called with the badge rect after every move
+     * @param {Function} onMoved       called with {dx,dy} when a drag finishes
+     * @param {{dx:number,dy:number}} initialOffset  saved offset from the corner
      */
-    constructor(composerEl, onClick, onReposition) {
+    constructor(composerEl, onClick, onReposition, onMoved, initialOffset) {
       this.composer = composerEl;
       this.onReposition = onReposition || (() => {});
+      this.onMoved = onMoved || (() => {});
+      this.dx = (initialOffset && initialOffset.dx) || 0;
+      this.dy = (initialOffset && initialOffset.dy) || 0;
       this._raf = 0;
       this._destroyed = false;
+      this._drag = null;
+      this._dimTimer = 0;
       this._calloutTimer = 0;
 
       const { host, shadow } = UI.makeShadowHost('promptlint-badge-host', UI.Z_BADGE);
@@ -47,13 +61,16 @@
           font: 700 12.5px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           color: var(--pl-fg);
           background: var(--pl-bg);
-          cursor: pointer;
+          cursor: grab;
           pointer-events: auto;
           box-shadow: 0 2px 10px rgba(0,0,0,.18);
           user-select: none;
-          transition: transform .12s ease, box-shadow .2s ease;
+          touch-action: none;
+          transition: transform .12s ease, box-shadow .2s ease, opacity .25s ease;
         }
-        .badge:hover { transform: scale(1.06); box-shadow: 0 4px 14px rgba(0,0,0,.28); }
+        .badge:hover { transform: scale(1.06); opacity: 1 !important; }
+        .badge.dim { opacity: .4; }
+        .badge.dragging { cursor: grabbing; transform: scale(1.1); box-shadow: 0 8px 22px rgba(0,0,0,.4); transition: none; }
         .badge[data-state="empty"] { padding: 0 8px 0 5px; }
         .logo {
           width: 17px; height: 17px; border-radius: 5px; flex: none;
@@ -72,7 +89,7 @@
         .badge.pulse { animation: pl-pulse 1.5s ease-out 2; }
         .callout {
           position: fixed;
-          max-width: 270px;
+          max-width: 272px;
           background: var(--pl-bg);
           color: var(--pl-fg);
           border: 1px solid var(--pl-border);
@@ -85,8 +102,9 @@
           display: none;
         }
         .callout b { color: var(--pl-accent); }
+        .callout .tip { color: var(--pl-fg2); font-size: 11.5px; margin-top: 6px; }
         .callout .gotit {
-          display: block; margin-top: 8px; padding: 5px 12px;
+          display: block; margin-top: 9px; padding: 5px 12px;
           border: none; border-radius: 7px; cursor: pointer;
           background: var(--pl-grad); color: #fff; font-weight: 700; font-size: 12px;
         }
@@ -95,21 +113,51 @@
 
       this.btn = UI.el('button', {
         class: 'pl-root badge pulse',
-        title: 'PromptLint — click for prompt feedback',
-        'aria-label': 'PromptLint prompt strength score — click for details',
-        onclick: (e) => {
-          try {
-            e.stopPropagation(); // keep host page from reacting to OUR button (never the reverse)
-            this.hideCallout();
-            onClick && onClick();
-          } catch (err) {
-            console.debug('PromptLint: badge click failed', err);
-          }
-        },
+        'aria-label': 'PromptLint prompt strength score — click for details, drag to move',
       });
+
+      // --- drag / click handling (pointer events, our element only) ---
+      this.btn.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        this._drag = { sx: e.clientX, sy: e.clientY, ox: this.dx, oy: this.dy, moved: false };
+        try { this.btn.setPointerCapture(e.pointerId); } catch (err) { /* no-op */ }
+      });
+      this.btn.addEventListener('pointermove', (e) => {
+        if (!this._drag) return;
+        const mx = e.clientX - this._drag.sx;
+        const my = e.clientY - this._drag.sy;
+        if (!this._drag.moved && Math.sqrt(mx * mx + my * my) < DRAG_THRESHOLD) return;
+        this._drag.moved = true;
+        this.btn.classList.add('dragging');
+        this.btn.classList.remove('dim', 'pulse');
+        this.dx = this._drag.ox + mx;
+        this.dy = this._drag.oy + my;
+        this.position();
+      });
+      const endDrag = (e) => {
+        const d = this._drag;
+        if (!d) return;
+        this._drag = null;
+        this.btn.classList.remove('dragging');
+        try { this.btn.releasePointerCapture(e.pointerId); } catch (err) { /* no-op */ }
+        if (d.moved) {
+          this.hideCallout();
+          this.onMoved({ dx: Math.round(this.dx), dy: Math.round(this.dy) });
+        } else {
+          this.hideCallout();
+          try { onClick && onClick(); } catch (err) { console.debug('PromptLint: badge click failed', err); }
+        }
+      };
+      this.btn.addEventListener('pointerup', endDrag);
+      this.btn.addEventListener('pointercancel', endDrag);
+      // Keyboard activation only (detail === 0); mouse clicks are handled above.
+      this.btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.detail === 0) { this.hideCallout(); onClick && onClick(); }
+      });
+      this.btn.addEventListener('mouseenter', () => this.btn.classList.remove('dim'));
       shadow.appendChild(this.btn);
 
-      // One-time onboarding callout (shown by main.js on first ever run).
       this.callout = UI.el('div', { class: 'pl-root callout' });
       shadow.appendChild(this.callout);
 
@@ -145,16 +193,16 @@
         }
         this.btn.style.display = 'flex';
         const bw = this.btn.offsetWidth || 44;
-        let left = rect.right - bw - 10;
-        let top = rect.bottom - 36;
+        let left = rect.right - bw - 10 + this.dx;
+        let top = rect.bottom - 36 + this.dy;
         left = Math.min(Math.max(8, left), window.innerWidth - bw - 8);
-        top = Math.min(Math.max(8, top), window.innerHeight - 34);
+        top = Math.min(Math.max(8, top), window.innerHeight - 32);
         this.btn.style.left = left + 'px';
         this.btn.style.top = top + 'px';
         const btnRect = this.btn.getBoundingClientRect();
         if (this.callout.style.display === 'block') {
           const cr = this.callout.getBoundingClientRect();
-          let cLeft = Math.min(Math.max(8, btnRect.right - cr.width), window.innerWidth - cr.width - 8);
+          const cLeft = Math.min(Math.max(8, btnRect.right - cr.width), window.innerWidth - cr.width - 8);
           let cTop = btnRect.top - cr.height - 10;
           if (cTop < 8) cTop = btnRect.bottom + 10;
           this.callout.style.left = cLeft + 'px';
@@ -164,6 +212,24 @@
       } catch (e) {
         console.debug('PromptLint: badge position failed', e);
       }
+    }
+
+    /** Put the badge back in the composer's corner. */
+    resetPosition() {
+      this.dx = 0;
+      this.dy = 0;
+      this.onMoved({ dx: 0, dy: 0 });
+      this._schedule();
+    }
+
+    /** Fade out briefly while the user types so it never blocks the text. */
+    nudgeDim() {
+      try {
+        if (this._drag) return;
+        this.btn.classList.add('dim');
+        clearTimeout(this._dimTimer);
+        this._dimTimer = setTimeout(() => this.btn.classList.remove('dim'), DIM_AFTER_MS);
+      } catch (e) { /* no-op */ }
     }
 
     /**
@@ -184,11 +250,11 @@
             this.btn.appendChild(UI.el('span', { class: 'count', text: '· ' + issueCount }));
           }
           this.btn.title = `PromptLint — prompt strength ${score}/100, ` +
-            (issueCount ? `${issueCount} issue${issueCount === 1 ? '' : 's'}. Click for details & restructure.`
-                        : 'no issues. Click for details.');
+            (issueCount ? `${issueCount} issue${issueCount === 1 ? '' : 's'}. Click for details · drag to move.`
+                        : 'no issues. Click for details · drag to move.');
         } else {
           this.btn.appendChild(UI.el('span', { class: 'wordmark', text: 'PromptLint' }));
-          this.btn.title = 'PromptLint — start typing and I\'ll score your prompt. Click to learn more.';
+          this.btn.title = 'PromptLint — start typing and I\'ll score your prompt. Click for details · drag to move.';
         }
         this._schedule(); // width may have changed
       } catch (e) {
@@ -203,19 +269,15 @@
         const p = UI.el('div');
         p.appendChild(UI.el('b', { text: 'PromptLint ' }));
         p.appendChild(document.createTextNode(
-          'checks your prompt as you type — vague asks, missing format, and more. ' +
-          'Click the score for the issue list and a one-click restructure.'
+          'scores your prompt as you type. Click it for the issue list and a one-click restructure.'
         ));
-        const gotit = UI.el('button', {
+        this.callout.appendChild(p);
+        this.callout.appendChild(UI.el('div', { class: 'tip', text: '💡 In the way? Just drag it anywhere.' }));
+        this.callout.appendChild(UI.el('button', {
           class: 'gotit',
           text: 'Got it',
-          onclick: () => {
-            this.hideCallout();
-            onDismiss && onDismiss();
-          },
-        });
-        this.callout.appendChild(p);
-        this.callout.appendChild(gotit);
+          onclick: () => { this.hideCallout(); onDismiss && onDismiss(); },
+        }));
         this.callout.style.display = 'block';
         this._schedule();
         clearTimeout(this._calloutTimer);
@@ -243,6 +305,7 @@
         window.removeEventListener('resize', this._reposition);
         cancelAnimationFrame(this._raf);
         clearTimeout(this._calloutTimer);
+        clearTimeout(this._dimTimer);
         this.host.remove();
       } catch (e) { /* no-op */ }
     }

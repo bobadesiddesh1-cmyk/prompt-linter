@@ -163,16 +163,28 @@
         },
         onRestructure: () => {
           const analysis = PL.tokenizer.analyze(state.hl ? state.hl.getText() : '');
-          if (!analysis.trimmed.text) return '';
-          return PL.restructure(analysis).text;
+          if (!analysis.trimmed.text) return null;
+          const cats = state.settings.categories;
+          const rewritten = PL.restructure(analysis).text;
+          // Score both versions so the panel can show the payoff (50 → 100).
+          const before = PL.rules.score(PL.rules.run(analysis, cats)).score;
+          const after = PL.rules.score(PL.rules.run(PL.tokenizer.analyze(rewritten), cats)).score;
+          return { text: rewritten, before, after };
         },
         onInsert: (text) => insertIntoComposer(text),
+        onResetPosition: () => state.badge && state.badge.resetPosition(),
       });
 
+      const savedPos = (state.settings.badgePos || {})[siteId()] || { dx: 0, dy: 0 };
       state.badge = new PL.Badge(
         composerInfo.el,
         () => state.panel && state.panel.toggle(),
-        (rect) => state.panel && state.panel.positionNear(rect)
+        (rect) => state.panel && state.panel.positionNear(rect),
+        async (pos) => {
+          // Persist the dragged offset for this site.
+          state.settings = await PL.storageApi.updateSettings({ badgePos: { [siteId()]: pos } });
+        },
+        savedPos
       );
 
       // Text changes → debounced lint. 'input' fires for both contenteditable
@@ -183,6 +195,8 @@
         try {
           const t = state.hl ? state.hl.getText() : '';
           if (t.trim() && !isPlaceholderText(composerInfo.el, t.trim())) state.pendingText = t;
+          // Fade the badge while typing so it never obscures the text.
+          if (state.badge) state.badge.nudgeDim();
         } catch (e) { /* no-op */ }
         clearTimeout(state.lintTimer);
         state.lintTimer = setTimeout(lint, DEBOUNCE_MS);
