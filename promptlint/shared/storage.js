@@ -27,6 +27,15 @@
       structure: true,
       style: true,
     },
+    // Per-site badge offset from the composer's bottom-right corner,
+    // written whenever the user drags the badge. {siteId: {dx, dy}}
+    badgePos: {},
+  };
+
+  const BRAND = {
+    name: 'Built with Siddesh',
+    url: 'https://www.buildwithsiddesh.com/',
+    line: 'Made by a human who got tired of bad prompts.',
   };
 
   const HISTORY_KEY = 'promptlint_history';
@@ -48,6 +57,7 @@
       enabled: typeof s.enabled === 'boolean' ? s.enabled : DEFAULT_SETTINGS.enabled,
       sites: Object.assign({}, DEFAULT_SETTINGS.sites, s.sites || {}),
       categories: Object.assign({}, DEFAULT_SETTINGS.categories, s.categories || {}),
+      badgePos: Object.assign({}, s.badgePos || {}),
     };
   }
 
@@ -72,6 +82,7 @@
       enabled: patch.enabled !== undefined ? patch.enabled : cur.enabled,
       sites: Object.assign({}, cur.sites, patch.sites || {}),
       categories: Object.assign({}, cur.categories, patch.categories || {}),
+      badgePos: Object.assign({}, cur.badgePos, patch.badgePos || {}),
     };
     return new Promise((resolve) => {
       if (!hasChrome()) return resolve(next);
@@ -173,6 +184,7 @@
 
   PL.storageApi = {
     SITES,
+    BRAND,
     DEFAULT_SETTINGS,
     getSettings,
     updateSettings,

@@ -69,6 +69,15 @@
           background: var(--pl-grad); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
         }
         .restructure-btn:hover { filter: brightness(1.1); }
+        .gain {
+          display: none; align-items: center; justify-content: center; gap: 8px;
+          margin-top: 10px; padding: 7px; border-radius: 9px; background: var(--pl-bg2);
+          font-size: 12px; font-weight: 700;
+        }
+        .gain .from { color: var(--pl-fg2); text-decoration: line-through; }
+        .gain .arrow { color: var(--pl-fg2); font-weight: 400; }
+        .gain .to { font-size: 15px; }
+        .gain .lbl { color: var(--pl-fg2); font-weight: 600; }
         .rewrite { margin-top: 10px; display: none; }
         .rewrite pre {
           background: var(--pl-bg2); border: 1px solid var(--pl-border); border-radius: 9px;
@@ -81,7 +90,20 @@
           background: var(--pl-bg2); color: var(--pl-fg); font-weight: 600; font-size: 12px; cursor: pointer;
         }
         .rewrite .actions button:hover { background: var(--pl-border); }
-        .ftr { padding: 8px 14px; border-top: 1px solid var(--pl-border); color: var(--pl-fg2); font-size: 11px; text-align: center; }
+        .reset-pos {
+          width: 100%; margin-top: 8px; padding: 6px 0; border-radius: 8px;
+          border: 1px solid var(--pl-border); background: transparent; color: var(--pl-fg2);
+          font-size: 11.5px; font-weight: 600; cursor: pointer;
+        }
+        .reset-pos:hover { background: var(--pl-bg2); color: var(--pl-fg); }
+        .ftr { padding: 9px 14px; border-top: 1px solid var(--pl-border); color: var(--pl-fg2); font-size: 11px; text-align: center; }
+        .ftr .brand {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-weight: 700; text-decoration: none;
+          background: var(--pl-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .ftr .brand:hover { text-decoration: underline; text-decoration-color: var(--pl-accent); }
+        .ftr .priv { display: block; margin-top: 3px; opacity: .85; }
       `;
       shadow.appendChild(style);
 
@@ -119,6 +141,17 @@
       });
       body.appendChild(this.restructureBtn);
 
+      this.resetPosBtn = UI.el('button', {
+        class: 'reset-pos',
+        text: '⤢ Reset badge position',
+        title: 'Put the score badge back in the composer corner',
+        onclick: () => this.cbs.onResetPosition && this.cbs.onResetPosition(),
+      });
+      body.appendChild(this.resetPosBtn);
+
+      this.gainBox = UI.el('div', { class: 'gain' });
+      body.appendChild(this.gainBox);
+
       this.rewriteBox = UI.el('div', { class: 'rewrite' });
       this.rewritePre = UI.el('pre');
       this.copyBtn = UI.el('button', { text: 'Copy', onclick: () => this._copy() });
@@ -128,17 +161,45 @@
       body.appendChild(this.rewriteBox);
       p.appendChild(body);
 
-      // Footer — tagline + privacy statement per spec.
-      p.appendChild(UI.el('div', { class: 'ftr', text: '✦ Sharper prompts, better answers · 100% local · zero network calls' }));
+      // Footer — maker attribution + the privacy guarantee.
+      const brand = (PL.storageApi && PL.storageApi.BRAND) || {};
+      const ftr = UI.el('div', { class: 'ftr' });
+      const link = UI.el('a', {
+        class: 'brand',
+        href: brand.url || '#',
+        target: '_blank',
+        rel: 'noopener noreferrer',
+        text: '✦ ' + (brand.name || 'Built with Siddesh'),
+        title: brand.line || '',
+      });
+      ftr.appendChild(link);
+      ftr.appendChild(UI.el('span', { class: 'priv', text: '100% local · zero network calls · no account' }));
+      p.appendChild(ftr);
     }
 
     _doRestructure() {
       try {
-        const text = this.cbs.onRestructure ? this.cbs.onRestructure() : '';
-        if (!text) return;
-        this.rewritePre.textContent = text;
+        const result = this.cbs.onRestructure ? this.cbs.onRestructure() : null;
+        if (!result || !result.text) return;
+        this.rewritePre.textContent = result.text;
         this.rewriteBox.style.display = 'block';
-        this._lastRewrite = text;
+        this._lastRewrite = result.text;
+
+        // Before → after score preview: shows the payoff at a glance.
+        this.gainBox.textContent = '';
+        if (typeof result.before === 'number' && typeof result.after === 'number') {
+          this.gainBox.appendChild(UI.el('span', { class: 'lbl', text: 'Strength' }));
+          this.gainBox.appendChild(UI.el('span', { class: 'from', text: String(result.before) }));
+          this.gainBox.appendChild(UI.el('span', { class: 'arrow', text: '→' }));
+          this.gainBox.appendChild(UI.el('span', {
+            class: 'to',
+            text: String(result.after),
+            style: 'color:' + UI.gradeColor(result.after, true),
+          }));
+          this.gainBox.style.display = 'flex';
+        } else {
+          this.gainBox.style.display = 'none';
+        }
       } catch (e) {
         console.debug('PromptLint: restructure failed', e);
       }

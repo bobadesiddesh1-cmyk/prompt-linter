@@ -1,15 +1,15 @@
-# Chrome Web Store submission guide — PromptLint v1.0.2
+# Chrome Web Store submission guide — PromptLint v1.1.0
 
 Everything below is paste-ready for the [Developer Dashboard](https://chrome.google.com/webstore/devconsole). Fields appear in dashboard order.
 
 ## 0. The package
 
-Upload **`promptlint-v1.0.2-store.zip`** (built from `promptlint/` with `manifest.json` at the **root of the zip** — the Web Store rejects zips where the manifest is nested inside a folder).
+Upload **`promptlint-v1.1.0-store.zip`** (built from `promptlint/` with `manifest.json` at the **root of the zip** — the Web Store rejects zips where the manifest is nested inside a folder).
 
 Rebuild it any time with:
 
 ```bash
-cd promptlint && zip -r ../promptlint-v1.0.2-store.zip . -x "README.md" -x "DECISIONS.md"
+cd promptlint && zip -r ../promptlint-v1.1.0-store.zip . -x "README.md" -x "DECISIONS.md"
 ```
 
 ## 1. Store listing
@@ -39,6 +39,8 @@ A live Prompt Strength score (0–100) sits at the corner of the composer. Click
 Private by construction: 100% local rule engine. Zero network calls, zero analytics, no account, and the only permission is "storage" for your own settings. Your prompts never leave the page.
 
 Better prompts in, better answers out.
+
+Built with Siddesh — buildwithsiddesh.com
 ```
 
 **Listing rules honored** (common rejection causes):
@@ -61,6 +63,8 @@ Better prompts in, better answers out.
 | **Host permission justification (content scripts on the 4 sites)** | `Content scripts must run on chatgpt.com, claude.ai, gemini.google.com and perplexity.ai to read the prompt composer's text and render underlines and a score badge on those pages. Analysis is fully local; the extension makes no network requests and runs on no other sites.` |
 | **Remote code** | No, the extension does not use remote code. *(All JS is packaged; there is no eval of fetched code, no CDN scripts.)* |
 | **Privacy policy URL** | `https://github.com/bobadesiddesh1-cmyk/prompt-linter/blob/main/PRIVACY.md` |
+| **Homepage URL** (Additional fields) | `https://www.buildwithsiddesh.com/` |
+| **Support URL** (Additional fields) | `https://github.com/bobadesiddesh1-cmyk/prompt-linter/issues` |
 
 **Data usage disclosures**: check **"Does not collect or use user data"** — every category (personally identifiable info, health, financial, authentication, communications, location, web history, user activity, website content) is **not collected**. The prompt text is processed in-memory on the user's device and never transmitted; the score history stays in local storage. Then check all three certifications (no sale of data, no use unrelated to single purpose, no use for creditworthiness).
 
@@ -70,7 +74,7 @@ Better prompts in, better answers out.
 - Regions: all.
 - Pricing: free.
 
-## 5. Pre-flight checklist (verified for v1.0.2)
+## 5. Pre-flight checklist (verified for v1.1.0)
 
 - [x] `manifest.json` at zip root; loads unpacked with zero console errors.
 - [x] Manifest V3; `minimum_chrome_version: 105` (CSS Custom Highlight API).
